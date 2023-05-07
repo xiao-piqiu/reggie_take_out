@@ -12,9 +12,13 @@ import com.itheima.reggie.service.DishFlavorService;
 import com.itheima.reggie.service.DishService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
@@ -26,6 +30,8 @@ public class DishController {
     private DishFlavorService dishFlavorService;
     @Autowired
     private CategoryService categoryService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @PostMapping
     public R<String> save(@RequestBody DishDto dishDto){
@@ -69,16 +75,27 @@ public class DishController {
     @PutMapping
     public R<String> update(@RequestBody DishDto dishDto){
         dishService.updateWithFlavor(dishDto);
+        Set keys = redisTemplate.keys("dish_"+dishDto.getCategoryId()+"_"+1);
+        redisTemplate.delete(keys);
         return R.success("新增成功");
     }
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish){
+        List<DishDto> dishDtos=null;
+        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+
+        //获取redis缓存数据
+        dishDtos= (List<DishDto>) redisTemplate.opsForValue().get(key);
+        //如果存在,返回,无需查询数据库
+        if (dishDtos!=null){
+            return R.success(dishDtos);
+        }
         LambdaQueryWrapper<Dish> queryWrapper=new LambdaQueryWrapper<>();
         queryWrapper.eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId());
         queryWrapper.eq(Dish::getStatus,1);
         queryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> list = dishService.list(queryWrapper);
-        List<DishDto> dishDtos=list.stream().map((item)->{
+        dishDtos=list.stream().map((item)->{
             DishDto dishDto=new DishDto();
             //把pageinfo中的数据拷贝进要返回给前端的dishdto中
             BeanUtils.copyProperties(item,dishDto);
@@ -97,6 +114,7 @@ public class DishController {
             dishDto.setFlavors(dishFlavorList);
             return dishDto;
         }).collect(Collectors.toList()) ;
+        redisTemplate.opsForValue().set(key,dishDtos,1, TimeUnit.HOURS);
         return R.success(dishDtos);
     }
 }
