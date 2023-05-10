@@ -2,6 +2,7 @@ package com.itheima.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itheima.reggie.common.BaseContext;
 import com.itheima.reggie.common.CustomException;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -80,4 +82,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         orderDetailService.saveBatch(orderDetailList);
         shoppingCartService.remove(queryWrapper);
     }
+
+    @Override
+    public Page<Orders> page(int page, int pageSize, Integer number, Date beginTime, Date endTime) {
+        Page<Orders> pageinfo=new Page<>(page,pageSize);
+        LambdaQueryWrapper<Orders> queryWrapper=new LambdaQueryWrapper<>();
+        queryWrapper.like(number!=null,Orders::getNumber,number);
+        queryWrapper.between(beginTime!=null && endTime!=null,Orders::getOrderTime,beginTime,endTime);
+        Page<Orders> ordersPage = super.page(pageinfo, queryWrapper);
+        return ordersPage;
+    }
+
 }
