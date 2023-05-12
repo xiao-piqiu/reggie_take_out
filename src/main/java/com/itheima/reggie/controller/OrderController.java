@@ -2,7 +2,10 @@ package com.itheima.reggie.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.reggie.common.R;
+import com.itheima.reggie.dto.OrdersDto;
+import com.itheima.reggie.entity.OrderDetail;
 import com.itheima.reggie.entity.Orders;
+import com.itheima.reggie.service.OrderDetailService;
 import com.itheima.reggie.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,5 +32,9 @@ public class OrderController {
     public R<String> updateStats(@RequestBody Orders orders){
         orderService.updateById(orders);
         return R.success("派送成功");
+    }
+    @GetMapping("/userPage")
+    public R<Page<OrdersDto>> userPage(int page, int pageSize){
+        return R.success(orderService.userPage(page,pageSize));
     }
 }

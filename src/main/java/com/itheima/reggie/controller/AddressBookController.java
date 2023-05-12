@@ -59,7 +59,11 @@ public class AddressBookController {
      */
     @GetMapping("/{id}")
     public R get(@PathVariable Long id) {
-        AddressBook addressBook = addressBookService.getById(id);
+        Long currentId = BaseContext.getCurrentId();
+//        AddressBook addressBook = addressBookService.getById(id);
+        LambdaQueryWrapper<AddressBook> queryWrapper=new LambdaQueryWrapper<>();
+        queryWrapper.eq(AddressBook::getUserId,currentId);
+        AddressBook addressBook = addressBookService.getOne(queryWrapper);
         if (addressBook != null) {
             return R.success(addressBook);
         } else {

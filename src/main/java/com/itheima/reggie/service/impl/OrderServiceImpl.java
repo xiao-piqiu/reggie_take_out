@@ -1,14 +1,19 @@
 package com.itheima.reggie.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itheima.reggie.common.BaseContext;
 import com.itheima.reggie.common.CustomException;
+import com.itheima.reggie.common.R;
+import com.itheima.reggie.dto.OrdersDto;
 import com.itheima.reggie.entity.*;
 import com.itheima.reggie.mapper.OrderMapper;
 import com.itheima.reggie.service.*;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,8 +94,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         LambdaQueryWrapper<Orders> queryWrapper=new LambdaQueryWrapper<>();
         queryWrapper.like(number!=null,Orders::getNumber,number);
         queryWrapper.between(beginTime!=null && endTime!=null,Orders::getOrderTime,beginTime,endTime);
-        Page<Orders> ordersPage = super.page(pageinfo, queryWrapper);
-        return ordersPage;
+        return super.page(pageinfo, queryWrapper);
+    }
+
+    @Override
+    public Page<OrdersDto> userPage(int page, int pageSize) {
+        Page<Orders> pageinfo=new Page<>(page,pageSize);
+        Page<OrdersDto> ordersDtoPage=new Page<>();
+        LambdaQueryWrapper<Orders> queryWrapper=new LambdaQueryWrapper<>();
+        queryWrapper.eq(Orders::getUserId,BaseContext.getCurrentId());
+        queryWrapper.orderByDesc(Orders::getOrderTime);
+        this.page(pageinfo,queryWrapper);
+        BeanUtils.copyProperties(pageinfo,ordersDtoPage,"records");
+        List<Orders> records = pageinfo.getRecords();
+        List<OrdersDto> collect = records.stream().map((item) -> {
+            OrdersDto ordersDto=new OrdersDto();
+            BeanUtils.copyProperties(item, ordersDto);
+            LambdaQueryWrapper<OrderDetail> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(OrderDetail::getOrderId, item.getId());
+            List<OrderDetail> orderDetailList = orderDetailService.list(lambdaQueryWrapper);
+            ordersDto.setOrderDetails(orderDetailList);
+            return ordersDto;
+
+        }).collect(Collectors.toList());
+        return ordersDtoPage.setRecords(collect);
     }
 
 }

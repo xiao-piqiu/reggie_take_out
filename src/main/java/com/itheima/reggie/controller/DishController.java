@@ -117,4 +117,9 @@ public class DishController {
         redisTemplate.opsForValue().set(key,dishDtos,1, TimeUnit.HOURS);
         return R.success(dishDtos);
     }
+    @PostMapping("/status/{status}")
+    public R<String> updateByStatus(@PathVariable int status,@RequestParam List<Long> ids){
+        dishService.updateByStatus(status,ids);
+        return R.success("修改成功");
+    }
 }

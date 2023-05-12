@@ -1,6 +1,7 @@
 package com.itheima.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.itheima.reggie.dto.DishDto;
 import com.itheima.reggie.entity.Dish;
@@ -64,6 +65,14 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         dishFlavorService.saveBatch(flavors);
 
 
+    }
+
+    @Override
+    public void updateByStatus(int status, List<Long> ids) {
+        UpdateWrapper<Dish> wrapper=new UpdateWrapper<>();
+        wrapper.in("id",ids);
+        wrapper.set("status",status);
+        this.update(wrapper);
     }
 
 }
